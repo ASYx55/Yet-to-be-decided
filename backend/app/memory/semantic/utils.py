@@ -7,8 +7,8 @@ and result visualization.
 Copyright (c) 2026 suy0x1
 """
 
-from .model import get_model
 from sklearn.metrics.pairwise import cosine_similarity
+from .model import get_model
 
 model = get_model()
 
