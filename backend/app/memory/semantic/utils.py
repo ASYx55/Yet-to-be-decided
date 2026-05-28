@@ -1,3 +1,12 @@
+"""
+Utility Module.
+
+Contains helper functions for embedding similarity computation
+and result visualization.
+
+Copyright (c) 2026 suy0x1
+"""
+
 from .model import get_model
 from sklearn.metrics.pairwise import cosine_similarity
 

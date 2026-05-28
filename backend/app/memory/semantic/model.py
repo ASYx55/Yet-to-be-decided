@@ -1,3 +1,12 @@
+"""
+Embedding Model Module.
+
+Provides a singleton SentenceTransformer model instance used
+for generating semantic embeddings across the system.
+
+Copyright (c) 2026 suy0x1
+"""
+
 from sentence_transformers import SentenceTransformer
 
 _model = SentenceTransformer("all-MiniLM-L6-v2")

@@ -1,5 +1,14 @@
-import chromadb
+"""
+ChromaDB Vector Store Module.
+
+Provides functions for creating collections, inserting embeddings,
+and performing semantic similarity search using ChromaDB.
+
+Copyright (c) 2026 suy0x1
+"""
+
 import uuid
+import chromadb
 
 
 def create_collection(name="memory"):

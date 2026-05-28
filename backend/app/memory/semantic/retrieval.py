@@ -1,3 +1,12 @@
+"""
+Semantic Retrieval Module.
+
+Implements high-level search functionality over vector embeddings
+stored in ChromaDB.
+
+Copyright (c) 2026 suy0x1
+"""
+
 from .embeddings import embed_text
 from .chroma_store import query_collection
 

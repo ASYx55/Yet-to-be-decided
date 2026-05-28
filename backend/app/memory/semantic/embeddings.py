@@ -1,3 +1,12 @@
+"""
+Embedding Utilities Module.
+
+Handles conversion of raw text into dense vector embeddings
+using a shared SentenceTransformer model.
+
+Copyright (c) 2026 suy0x1
+"""
+
 from .model import get_model
 
 model = get_model()
