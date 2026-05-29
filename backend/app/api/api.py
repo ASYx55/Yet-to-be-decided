@@ -41,14 +41,12 @@ class StudentInfoUpdate(BaseModel):
  weak_points:list[str] | None = None
 
 class Memory(BaseModel):
+ memory_id: str
  memory_type:str
  subject:str
  topic:str
  detail:str
  confidence:str=Field(default="low")
-
-class MemoryID(Memory):
-  memory_id: str
 
 class ChatReq(BaseModel):
  message:str
@@ -126,21 +124,20 @@ def student_info_update(update:StudentInfoUpdate):
  student_info.update(update_data)
  return StudentInfo(**student_info)
 
-@application.get("/memory", response_model=list[MemoryID])
+@application.get("/memory", response_model=list[Memory])
 def read_student_memory():
- return [MemoryID(**item) for item in student_memory]
+ return [Memory(**item) for item in student_memory]
 
-@application.post("/memory", response_model=MemoryID)
+@application.post("/memory", response_model=Memory)
 def create_memory(memory: Memory):
  memory_id = f"mem_{len(student_memory) + 1:03d}"
 
- new_item= {
-  "memory_id":memory_id,
-  **memory.model_dump(),
- }
+ memory_data = memory.model_dump()
+ memory_data["memory_id"] = memory_id
+ new_item = memory_data
 
  student_memory.append(new_item)
- return MemoryID(**new_item)
+ return Memory(**new_item)
 
 @application.post("/chat", response_model=ChatRes)
 def chat(request:ChatReq):
@@ -160,6 +157,7 @@ def chat(request:ChatReq):
  if "not understand" in request.message.lower() or "don't understand" in request.message.lower():
   create_memory(
    Memory(
+   memory_id="temp",
    memory_type="weakness",
    subject=request.subject,
    topic=request.topic,
