@@ -1,14 +1,39 @@
-import pytest
+"""
+Conversation logging package test suite.
+
+This module verifies the behavior of the conversation log models,
+JSON storage layer, and session logger. Tests isolate persistence by
+redirecting storage writes into pytest temporary directories.
+
+Coverage:
+    - turn defaults and serialization
+    - session lifecycle and reconstruction
+    - JSON-backed save, load, list, and delete operations
+    - logger session flow and resume behavior
+    - Gemini context formatting
+
+Copyright (c) 2026 ASYx55
+"""
+
+import sys
 from pathlib import Path
 
-from .model import Turn, Session, Role
-from .log import ConvoLogger
-from . import storage as storage_module
+import pytest
+
+if __package__:
+    from .model import Turn, Session, Role
+    from .log import ConvoLogger
+    from . import storage as storage_module
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from convolog.model import Turn, Session, Role
+    from convolog.log import ConvoLogger
+    from convolog import storage as storage_module
 
 
 @pytest.fixture(autouse=True)
 def temp_data_dir(tmp_path, monkeypatch):
-   
+    """Route storage writes to pytest's temporary directory."""
     monkeypatch.setattr(storage_module, "BASE_DIR", tmp_path / "students")
 
 
@@ -22,7 +47,12 @@ class TestTurn:
         assert t.topic is None
 
     def test_turn_serialises_and_deserialises(self):
-        t = Turn(role=Role.ASSISTANT, content="Recursion is...", topic="recursion", latency_ms=320)
+        t = Turn(
+            role=Role.ASSISTANT,
+            content="Recursion is...",
+            topic="recursion",
+            latency_ms=320,
+        )
         t2 = Turn.from_dict(t.to_dict())
         assert t2.role == t.role
         assert t2.content == t.content
@@ -70,8 +100,7 @@ class TestSession:
 
 class TestConversationLogStore:
     def test_save_and_load_session(self):
-        from .storage import ConvoLogStore
-        store = ConvoLogStore()
+        store = storage_module.ConvoLogStore()
 
         s = Session(student_id="stu_001")
         s.add_turn(Turn(role=Role.USER, content="Hello"))
@@ -83,24 +112,21 @@ class TestConversationLogStore:
         assert loaded.turns[0].content == "Hello"
 
     def test_load_nonexistent_returns_none(self):
-        from .storage import ConvoLogStore
-        store = ConvoLogStore()
+        store = storage_module.ConvoLogStore()
         result = store.load_session("stu_999", "fake-session-id")
         assert result is None
 
-    def test_json_file_is_created_on_disk(self, tmp_path):
-        from .storage import ConvoLogStore, BASE_DIR
-        store = ConvoLogStore()
+    def test_json_file_is_created_on_disk(self):
+        store = storage_module.ConvoLogStore()
 
         s = Session(student_id="stu_001")
         store.save_session(s)
 
-        expected_file = BASE_DIR / "stu_001" / f"{s.session_id}.json"
+        expected_file = storage_module.BASE_DIR / "stu_001" / f"{s.session_id}.json"
         assert expected_file.exists()
 
     def test_get_student_session_ids(self):
-        from .storage import ConvoLogStore
-        store = ConvoLogStore()
+        store = storage_module.ConvoLogStore()
 
         s1 = Session(student_id="stu_001")
         s2 = Session(student_id="stu_001")
@@ -112,14 +138,14 @@ class TestConversationLogStore:
         assert s2.session_id in ids
 
     def test_delete_session(self):
-        from .storage import ConvoLogStore
-        store = ConvoLogStore()
+        store = storage_module.ConvoLogStore()
 
         s = Session(student_id="stu_001")
         store.save_session(s)
         store.delete_session("stu_001", s.session_id)
 
         assert store.load_session("stu_001", s.session_id) is None
+
 
 class TestConversationLogger:
     def test_full_session_flow(self):
@@ -134,19 +160,17 @@ class TestConversationLogger:
         assert turns[0].role == Role.USER
         assert turns[1].role == Role.ASSISTANT
 
-    def test_session_persists_to_disk(self, tmp_path):
-        from .storage import BASE_DIR
+    def test_session_persists_to_disk(self):
         logger = ConvoLogger(student_id="stu_123")
         session_id = logger.start_session()
 
         logger.log_user_message("Hello")
         logger.log_assistant_message("Hi!")
 
-        file = BASE_DIR / "stu_123" / f"{session_id}.json"
+        file = storage_module.BASE_DIR / "stu_123" / f"{session_id}.json"
         assert file.exists()
 
     def test_session_can_be_resumed(self):
-        # Start a session and log something
         logger1 = ConvoLogger(student_id="stu_123")
         session_id = logger1.start_session()
         logger1.log_user_message("Hello")
