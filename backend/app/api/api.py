@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
