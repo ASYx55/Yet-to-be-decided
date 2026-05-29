@@ -1,37 +1,45 @@
 """
-Embedding Model Module.
+Shared embedding model initialization utilities.
 
-Provides a singleton SentenceTransformer model instance used
-for generating semantic embeddings across the system.
+This module provides a globally initialized SentenceTransformer
+instance used throughout the semantic memory system for generating
+dense vector embeddings.
+
+A singleton-style model instance is used to avoid repeated model
+loading overhead and to improve runtime efficiency during retrieval
+and indexing operations.
+
+Model:
+    - intfloat/e5-base-v2
+    - optimized for semantic retrieval tasks
+    - supports query/passage embedding alignment
 
 Copyright (c) 2026 suy0x1
 """
 
 from sentence_transformers import SentenceTransformer
 
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+_model = SentenceTransformer("intfloat/e5-base-v2")
 
-def get_model():
+
+def get_model() -> SentenceTransformer:
     """
-    Return the globally initialized SentenceTransformer model.
+    Return the shared SentenceTransformer embedding model instance.
 
-    This function ensures the embedding model is loaded only once
-    during application startup. Reusing a single model instance is
-    significantly faster and more memory-efficient than loading
-    the model repeatedly inside multiple functions.
+    The embedding model is initialized once at module load time and
+    reused across the application to reduce startup latency and
+    memory overhead.
 
     Returns:
-        SentenceTransformer:
-            A preloaded sentence-transformer embedding model.
-
-    Example:
-        >>> from model import get_model
-        >>> model = get_model()
-        >>> emb = model.encode("hello world")
+        Shared SentenceTransformer model instance used for semantic
+        embedding generation.
 
     Notes:
-        - Uses the `all-MiniLM-L6-v2` embedding model.
-        - Produces dense semantic vector embeddings.
-        - Embedding dimension for this model is 384.
+        - Uses the ``e5-base-v2`` embedding model.
+        - Designed for query/passage retrieval workflows.
+        - Supports normalized semantic vector embeddings.
+        - Reusing a single model instance is significantly more
+          efficient than repeatedly loading the model.
     """
+
     return _model
