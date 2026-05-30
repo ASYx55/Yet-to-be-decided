@@ -1,0 +1,191 @@
+"""Copyright (c) 2026 Memori74"""
+from dataclasses import asdict,dataclass,field
+from datetime import datetime,timezone
+from enum import Enum
+from pathlib import Path
+from typing import Optional
+import json
+import os
+
+BASE_DIR=Path(os.getenv("DATA_DIR","data/students"))
+
+class Signal(str,Enum):
+    Strength="strength"
+    Weakness="weakness"
+    Preference="preference"
+    Speed="speed"
+    Confidence="confidence"
+
+@dataclass
+class SignalObs:
+    topic:str
+    signal_type:Signal
+    detail:str
+    confidence:str
+    count:int=1
+    updated_at:str=field(default_factory=lambda:datetime.now(timezone.utc).isoformat())
+    
+    def touch(self)->None:
+        self.count+=1
+        self.updated_at=datetime.now(timezone.utc).isoformat()
+
+    def to_dict(self)->dict:
+        data=asdict(self)
+        data["signal_type"]=self.signal_type.value
+        return data
+    
+    @classmethod
+    def from_dict(cls,data:dict)->"SignalObs":
+        data["signal_type"]=Signal(data["signal_type"])
+        return cls(**data)
+    
+@dataclass
+class LearningInfo:
+    student_id: str
+    strengths:dict[str,int]=field(default_factory=dict)
+    weaknesses:dict[str,int]=field(default_factory=dict)
+    learning_speed:str="unknown" 
+    study_style:str="unknown"
+    confidence:dict[str,str]=field(default_factory=dict)
+    signals:list[SignalObs]=field(default_factory=list)
+    updated_at:str=field(default_factory=lambda:datetime.now(timezone.utc).isoformat())
+
+    def add_signal(self,signal:SignalObs)->None:
+      existing=self.find_signal(signal.topic,signal.signal_type)
+      if existing:
+          existing.detail=signal.detail
+          existing.confidence=signal.confidence
+          existing.touch()
+      else:
+          self.signals.append(signal)
+      self.apply_signal(signal)
+      self.updated_at=datetime.now(timezone.utc).isoformat()
+
+    def find_signal(self,topic:str,signal_type:Signal)->Optional[SignalObs]:
+        for signal in self.signals:
+            if signal.topic==topic and signal.signal_type==signal_type:
+                return signal
+        return None
+    
+    def apply_signal(self,signal:SignalObs)->None:
+        if signal.signal_type==Signal.Strength:
+            self.strengths[signal.topic]=self.strengths.get(signal.topic,0)+1
+        elif signal.signal_type==Signal.Weakness:
+            self.weaknesses[signal.topic]=self.weaknesses.get(signal.topic,0)+1
+        elif signal.signal_type==Signal.Preference:
+            self.study_style=signal.detail
+        elif signal.signal_type==Signal.Speed:
+            self.learning_speed=signal.detail
+        elif signal.signal_type==Signal.Confidence:
+            self.confidence[signal.topic]=signal.confidence
+
+    def to_dict(self)->dict:
+        return{
+            "student_id":self.student_id,
+            "strengths":self.strengths,
+            "weaknesses":self.weaknesses,
+            "learning_speed":self.learning_speed,
+            "study_style":self.study_style,
+            "confidence":self.confidence,
+            "signals":[signal.to_dict() for signal in self.signals],
+            "updated_at":self.updated_at,
+
+        }
+    
+    @classmethod
+    def from_dict(cls,data:dict)->"LearningInfo":
+        data_copy=dict(data)
+        signals=[SignalObs.from_dict(item) for item in data_copy.pop("signals",[])]
+        profile=cls(**data_copy)
+        profile.signals=signals
+        return profile
+    
+
+class ProfileStore:
+    def __init__(self):
+        BASE_DIR.mkdir(parents=True,exist_ok=True)
+
+    def student_folder(self,student_id:str)->Path:
+        folder=BASE_DIR/student_id
+        folder.mkdir(parents=True,exist_ok=True)
+        return folder
+    
+    def path(self,student_id:str)->Path:
+        return self.student_folder(student_id)/"learning_info.json"
+    
+    def save_prof(self,profile:LearningInfo)->None:
+        path=self.path(profile.student_id)
+        with open(path,"w") as file:
+            json.dump(profile.to_dict(),file,indent=2)
+
+    def load_prof(self,student_id:str)->Optional[LearningInfo]:
+        path=self.path(student_id)
+        if not path.exists():
+            return None
+        with open(path,"r") as file:
+            return LearningInfo.from_dict(json.load(file))
+        
+    def get_prof(self,student_id:str)->LearningInfo:
+        prof=self.load_prof(student_id)
+        if prof is None:
+            prof=LearningInfo(student_id=student_id)
+            self.save_prof(prof)
+        return prof
+    
+    def del_prof(self,student_id:str)->None:
+        path=self.path(student_id)
+        if path.exists():
+            path.unlink()
+
+class LPM():
+    def __init__(self,student_id:str):
+        self.student_id=student_id
+        self.store=ProfileStore()
+        self.prof=self.store.get_prof(student_id)
+
+    def rec_strength(self,topic:str,detail:str,confidence:str="medium")->LearningInfo:
+        signal=SignalObs(topic=topic,signal_type=Signal.Strength,detail=detail,confidence=confidence)
+        return self.rec_signal(signal)
+    
+    def rec_weakness(self,topic:str,detail:str,confidence:str="medium")->LearningInfo:
+        signal=SignalObs(topic=topic,signal_type=Signal.Weakness,detail=detail,confidence=confidence)
+        return self.rec_signal(signal)
+    
+    def rec_study_style(self,study_style:str,confidence:str="medium")->LearningInfo:
+        signal=SignalObs(topic="general",signal_type=Signal.Preference,detail=study_style,confidence=confidence)
+        return self.rec_signal(signal)
+    
+    def rec_speed(self,speed:str,confidence:str="medium")->LearningInfo:
+        signal=SignalObs(topic="general",signal_type=Signal.Speed,detail=speed,confidence=confidence)
+        return self.rec_signal(signal)
+    
+    def rec_confidence(self,topic:str,confidence:str)->LearningInfo:
+        detail="Student confidence for" + topic + "is"+ confidence
+        signal=SignalObs(topic=topic,signal_type=Signal.Confidence,detail=detail,confidence=confidence)
+        return self.rec_signal(signal)
+    
+    def get_prof(self)->LearningInfo:
+        self.prof=self.store.get_prof(self.student_id)
+        return self.prof
+    
+    def context(self)->dict:
+        prof=self.get_prof()
+        return{
+            "strengths":prof.strengths,
+            "weaknesses":prof.weaknesses,
+            "speed":prof.learning_speed,
+            "study_style":prof.study_style,
+            "confidence":prof.confidence,
+        }
+    
+    def rec_signal(self,signal:SignalObs)->LearningInfo:
+        self.prof.add_signal(signal)
+        self.store.save_prof(self.prof)
+        return self.prof
+    
+if __name__ =="__main__":
+    memory=LPM(student_id="local_student")
+    memory.rec_weakness("differentiation","Student struggles with continuity problems","low")
+    memory.rec_strength("integration","Student solves integration problems confidently","high")
+    memory.rec_study_style("step by step","medium")
+    print(memory.context())
