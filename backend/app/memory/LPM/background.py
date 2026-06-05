@@ -26,7 +26,7 @@ class ConversationBufferStore:
         self.append_message(subject,topic,"assistant",assistant_reply)
 
     def has_pending_messages(self):
-        data=self.real_all()
+        data = self.read_all()
         return len(data.get("messages",[]))>data.get("processed_count",0)
     
     def build_request(self,max_recent_messages:int=8):
@@ -40,8 +40,8 @@ class ConversationBufferStore:
     
     def mark_processed(self):
         data=self.read_all()
-        data["processed_count"]=len(data.get["messages",[]])
-        self.wriet_all(data)
+        data["processed_count"]=len(data.get("messages",[]))
+        self.write_all(data)
 
     def default_state(self):
         return {"subject":"unknown","topic":"unknown","previous_topic":None,"messages":[],"processed_count":0}
@@ -78,6 +78,8 @@ class Layer3BackgroundService:
             return None
         profile=self.profile_store.load()
         signals=self.analyzer.analyze(request)
+        if not signals:
+            return None
         result=self.extractor.extract_from_signals(profile,request,signals)
         self.profile_store.save(result.profile)
         self.buffer_store.mark_processed()

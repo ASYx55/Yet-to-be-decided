@@ -33,7 +33,7 @@ class OllamaSignalAnalyzer:
     def call_ollama(self,prompt:str):
         payload={"model":self.model_name,"prompt":prompt,"stream":False,"format":"json","options":{"temperature":0.1}}
         body=json.dumps(payload).encode("utf-8")
-        headers={"Content-Type":"application.json"}
+        headers = {"Content-Type": "application/json"}
         http_request=url_request.Request(self.ollama_url,data=body,headers=headers,method="POST")
         try:
             with url_request.urlopen(http_request,timeout=self.timeout_seconds) as response:
@@ -74,7 +74,7 @@ class OllamaSignalAnalyzer:
             raw_signals=data.get("signals",[]) if isinstance(data,dict) else[]
             signals=[]
             for raw_signal in raw_signals:
-                if not isinstance(raw_signals, dict):
+                if not isinstance(raw_signal, dict):
                     continue
                 raw_signal.setdefault("subject",request.subject)
                 raw_signal.setdefault("topic",request.topic)
@@ -140,7 +140,6 @@ class OllamaSignalAnalyzer:
             compact=" ".join(transcript.split())
             return compact[:220]
         
-GeminiSignalAnalyzer = OllamaSignalAnalyzer
 
 
 
