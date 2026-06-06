@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from .background import Layer3MessageProcessor
@@ -13,7 +14,18 @@ def run_demo():
         root=Path(folder)
         profile_store=LearningProfileStore(root/"profile.json")
         service=Layer3MessageProcessor(profile_store=profile_store,analyzer=FakeAnalyzer())
-        result=service.process_chat_turn("math", "differentiation", "Can you break it down step by step? I think derivative of sin(x^2) is cos(x^2).", "That is not correct because the chain rule is missing.")
+        result = service.process_chat_turn(
+        "math",
+        "differentiation",
+        (
+        "Can you break it down step by step? "
+        "I think derivative of sin(x^2) is cos(x^2)."
+        ),
+        (
+        "That is not correct because "
+        "the chain rule is missing."
+         ),
+         )
         assert result is not None
         assert "differentiation" in result.profile.weaknesses
         assert result.profile.preferred_learning_style=="step by step"

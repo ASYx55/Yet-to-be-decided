@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 from datetime import datetime,timezone
 from pydantic import BaseModel,Field
 

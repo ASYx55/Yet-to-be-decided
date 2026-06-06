@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 from .model import ConversationAnalysisRequest, EvidenceItem, ExtractedLearningSignal, LearningProfile, MemoryAdapterEntry, ProfileExtraction, SemanticMemoryEvent, StudentInfoUpdateDraft, TopicLearningSignal, utc_now
 
 def normalize_text(value:str):

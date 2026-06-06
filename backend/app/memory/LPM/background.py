@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 from .analyzer import OllamaSignalAnalyzer
 from .extractor import LearningProfileExtractor
 from .model import ConversationAnalysisRequest, ConversationMessage, LOCAL_STUDENT_ID, ProfileExtraction

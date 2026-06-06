@@ -1,3 +1,4 @@
+"""Copyright (c) 2026 Memori74"""
 # Ollama-First Layer 3
 
 **Layer 3: Learning Profile Memory**.
