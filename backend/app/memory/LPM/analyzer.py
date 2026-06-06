@@ -127,11 +127,11 @@ class OllamaSignalAnalyzer:
         normalized=normalize(transcript)
         signals=[]
         if request.is_correct is False or has_any(normalized,("incorrect",
-                                                        w"wrong",
-                                                        "not correct",
-                                                        "forgot",
-                                                        "mistake",
-                                                        "error")):
+                                                    "wrong",
+                                                    "not correct",
+                                                    "forgot",
+                                                    "mistake",
+                                                    "error")):
             mistakes=self.infer_mistakes(normalized)
             detail="Student made an error in" + request.topic
             signals.append(ExtractedLearningSignal(signal_type="weakness",

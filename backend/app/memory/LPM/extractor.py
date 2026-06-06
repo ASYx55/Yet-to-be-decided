@@ -247,8 +247,7 @@ class LearningProfileExtractor:
                             weakness_detected:bool):
         events=[]
         if weakness_detected:
-            text=f"Student struggles with {signal.topic};repeated mistakes include {', '.join(signal.mistakes) 
-            if signal.mistakes else 'model detected weakness'}."
+            text=f"Student struggles with {signal.topic};repeated mistakes include {', '.join(signal.mistakes)if signal.mistakes else 'model detected weakness'}."
             events.append(SemanticMemoryEvent(text=text,
                         topic=signal.topic,
                         memory_type="weakness",
