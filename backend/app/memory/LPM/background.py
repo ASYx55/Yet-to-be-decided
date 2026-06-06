@@ -1,11 +1,14 @@
 """Copyright (c) 2026 Memori74"""
 from .analyzer import OllamaSignalAnalyzer
 from .extractor import LearningProfileExtractor
-from .model import ConversationAnalysisRequest, ConversationMessage, LOCAL_STUDENT_ID, ProfileExtraction
+from .model import ConversationAnalysisRequest, ConversationMessage, LOCAL_STUDENT_ID
 from .storage import LearningProfileStore
 
 class Layer3MessageProcessor:
-    def __init__(self,profile_store:LearningProfileStore|None=None,analyzer:OllamaSignalAnalyzer|None=None,extractor:LearningProfileExtractor|None=None,max_recent_messages:int=8):
+    def __init__(self,profile_store:LearningProfileStore|None=None,
+                analyzer:OllamaSignalAnalyzer|None=None,
+                extractor:LearningProfileExtractor|None=None,
+                max_recent_messages:int=8):
         self.profile_store=profile_store or LearningProfileStore()
         self.analyzer=analyzer or OllamaSignalAnalyzer()
         self.extractor=extractor or LearningProfileExtractor()
@@ -13,7 +16,12 @@ class Layer3MessageProcessor:
 
     def process_chat_turn(self,subject:str,topic:str,student_message:str,assistant_reply:str):
         messages=[ConversationMessage(role="student",content=student_message),ConversationMessage(role="assistant",content=assistant_reply)]
-        request=ConversationAnalysisRequest(student_id=LOCAL_STUDENT_ID,subject=subject,topic=topic,messages=messages[-self.max_recent_messages :],event_type="chat_turn",max_recent_messages=self.max_recent_messages)
+        request=ConversationAnalysisRequest(student_id=LOCAL_STUDENT_ID,
+                                            subject=subject,
+                                            topic=topic,
+                                            messages=messages[-self.max_recent_messages :],
+                                            event_type="chat_turn",
+                                            max_recent_messages=self.max_recent_messages)
         signals=self.analyzer.analyze(request)
         if not signals:
             return None

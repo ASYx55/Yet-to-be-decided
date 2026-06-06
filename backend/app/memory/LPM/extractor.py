@@ -1,5 +1,13 @@
 """Copyright (c) 2026 Memori74"""
-from .model import ConversationAnalysisRequest, EvidenceItem, ExtractedLearningSignal, LearningProfile, MemoryAdapterEntry, ProfileExtraction, SemanticMemoryEvent, StudentInfoUpdateDraft, TopicLearningSignal, utc_now
+from .model import (ConversationAnalysisRequest, 
+                    EvidenceItem, ExtractedLearningSignal, 
+                    LearningProfile, 
+                    MemoryAdapterEntry, 
+                    ProfileExtraction, 
+                    SemanticMemoryEvent, 
+                    StudentInfoUpdateDraft, 
+                    TopicLearningSignal, 
+                    utc_now)
 
 def normalize_text(value:str):
     return value.lower().replace("’","'").strip()
@@ -61,7 +69,12 @@ class LearningProfileExtractor:
         profile.updated_at=utc_now()
         student_info_update=StudentInfoUpdateDraft(learning_style=profile.preferred_learning_style,strong_points=profile.strengths,weak_points=profile.weaknesses)
         mastery_score=self.build_mastery_score(profile)
-        return ProfileExtraction(profile=profile,student_info_update=student_info_update,extracted_signals=extracted_signals,memory_updates=memory_updates,semantic_memory_events=semantic_events,mastery_scores=mastery_score)
+        return ProfileExtraction(profile=profile,
+                                 student_info_update=student_info_update,
+                                 extracted_signals=extracted_signals,
+                                 memory_updates=memory_updates,
+                                 semantic_memory_events=semantic_events,
+                                 mastery_scores=mastery_score)
 
     def group_extracted_signals(self,extracted_signals:list[ExtractedLearningSignal]):
         grouped:dict[str,list[ExtractedLearningSignal]]={}
@@ -115,7 +128,7 @@ class LearningProfileExtractor:
         if high_confidence:
             signal.confidence_score=clamp(signal.confidence_score+0.1)
         if is_correct is True:
-             signal.confidence_score=clamp(signal.confidence_score+0.08)
+            signal.confidence_score=clamp(signal.confidence_score+0.08)
         if is_correct is False:
             signal.confidence_score=clamp(signal.confidence_score-0.08)
 
@@ -172,9 +185,21 @@ class LearningProfileExtractor:
         events=[]
         if weakness_detected:
             text=f"Student struggles with {signal.topic};repeated mistakes include {', '.join(signal.mistakes) if signal.mistakes else 'model detected weakness'}."
-            events.append(SemanticMemoryEvent(text=text,topic=signal.topic,memory_type="weakness",importance=0.8,confidence=signal.confidence_score,learning_style=profile.preferred_learning_style,student_id=profile.student_id))
+            events.append(SemanticMemoryEvent(text=text,
+                                            topic=signal.topic,
+                                            memory_type="weakness",
+                                            importance=0.8,
+                                            confidence=signal.confidence_score,
+                                            learning_style=profile.preferred_learning_style,
+                                            student_id=profile.student_id))
         if strength_detected:
-             text=f"Student is showing strength in {signal.topic}."
-             events.append(SemanticMemoryEvent(text=text,topic=signal.topic,memory_type="strength",importance=0.6,confidence=signal.confidence_score,learning_style=profile.preferred_learning_style,student_id=profile.student_id))
+            text=f"Student is showing strength in {signal.topic}."
+            events.append(SemanticMemoryEvent(text=text,
+                                               topic=signal.topic,
+                                               memory_type="strength",
+                                               importance=0.6,
+                                               confidence=signal.confidence_score,
+                                               learning_style=profile.preferred_learning_style,
+                                               student_id=profile.student_id))
         return events
     

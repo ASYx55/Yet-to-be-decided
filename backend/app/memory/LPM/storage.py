@@ -1,5 +1,4 @@
 """Copyright (c) 2026 Memori74"""
-"""Storage layer for learning profile memory."""
 import json
 from pathlib import Path
 from .model import LOCAL_STUDENT_ID,LearningProfile
