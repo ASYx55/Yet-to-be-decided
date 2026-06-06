@@ -30,7 +30,7 @@ class OllamaSignalAnalyzer:
         if self.use_fallback:
             return self.local_fallback(request)
         return[]
-    
+
     def call_ollama(self,prompt:str):
         payload={"model":self.model_name,"prompt":prompt,"stream":False,"format":"json","options":{"temperature":0.1}}
         body=json.dumps(payload).encode("utf-8")
@@ -42,7 +42,7 @@ class OllamaSignalAnalyzer:
                 return data.get("response","")
         except(URLError,HTTPError,TimeoutError,json.JSONDecodeError):
             return ""
-        
+
     def build_prompt(self,request: ConversationAnalysisRequest):
         recent_messages=request.messages[-request.max_recent_messages:]
         transcript_lines=[]
@@ -63,7 +63,7 @@ class OllamaSignalAnalyzer:
             Event Type:{request.event_type}
             Known correctness if provided:{request.is_correct}
             Transcript:{transcript}"""
-        
+
     def parse_model_response(self,response_text:str,request:ConversationAnalysisRequest):
         json_text=self.extract_json_object(response_text)
         if not json_text:
@@ -84,7 +84,7 @@ class OllamaSignalAnalyzer:
             except Exception:
                 continue
         return signals
-        
+
     def extract_json_object(self,response_text:str):
         text=response_text.strip()
         if text.startswith("```"):
@@ -94,7 +94,7 @@ class OllamaSignalAnalyzer:
         if start==-1 or end ==-1 or end<=start:
             return ""
         return text[start:end+1]
-        
+
     def local_fallback(self,request:ConversationAnalysisRequest):
         recent_messages=request.messages[-request.max_recent_messages:]
         transcript = "\n".join(message.role + ": " + message.content for message in recent_messages)
@@ -120,10 +120,10 @@ class OllamaSignalAnalyzer:
         if not signals:
             signals.append(ExtractedLearningSignal(signal_type="neutral", subject=request.subject, topic=request.topic, detail="No strong learning signal found.", evidence=self.short_evidence(transcript), confidence_label="low", confidence_score=0.2))
         return signals
-        
+
     def infer_mistakes(self,normalized:str):
             return ["unspecified mistake"]
-        
+
     def infer_learning_style(self,normalized:str):
             if has_any(normalized, ("step by step","break it down","slowly","from basics")):
                 return "step by step"
@@ -136,18 +136,18 @@ class OllamaSignalAnalyzer:
             if has_any(normalized, ("short","brief","summary","concise")):
                 return "short answer"
             return None
-        
+
     def short_evidence(self,transcript:str):
             compact=" ".join(transcript.split())
             return compact[:220]
-        
 
 
 
 
 
 
-    
+
+
 
 
 

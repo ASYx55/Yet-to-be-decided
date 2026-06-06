@@ -39,7 +39,7 @@ class LearningProfileExtractor:
             mistakes=self.collect_signal_mistakes(topic_signals)
             style_signal=self.first_signal_value(topic_signals,"learning_style")
             slow_signal=any(item.speed=="slow"for item in topic_signals)
-            fast_signal=any(item.speed=="fast"for item in topic_signals)    
+            fast_signal=any(item.speed=="fast"for item in topic_signals)
             low_confidence=any(item.signal_type=="confidence" and (item.confidence_label=="low" or item.confidence_score < 0.35) for item in topic_signals)
             high_confidence=any(item.signal_type=="confidence" and (item.confidence_label=="high" or item.confidence_score > 0.7) for item in topic_signals)
             incorrect_detected=any(item.is_correct is False for item in topic_signals)
@@ -62,14 +62,14 @@ class LearningProfileExtractor:
         student_info_update=StudentInfoUpdateDraft(learning_style=profile.preferred_learning_style,strong_points=profile.strengths,weak_points=profile.weaknesses)
         mastery_score=self.build_mastery_score(profile)
         return ProfileExtraction(profile=profile,student_info_update=student_info_update,extracted_signals=extracted_signals,memory_updates=memory_updates,semantic_memory_events=semantic_events,mastery_scores=mastery_score)
-    
+
     def group_extracted_signals(self,extracted_signals:list[ExtractedLearningSignal]):
         grouped:dict[str,list[ExtractedLearningSignal]]={}
         for signal in extracted_signals:
             key=topic_key(signal.subject,signal.topic)
             grouped.setdefault(key,[]).append(signal)
         return grouped
-    
+
     def collect_signal_mistakes(self,topic_signals:list[ExtractedLearningSignal]):
         mistakes=[]
         for signal in topic_signals:
@@ -82,14 +82,14 @@ class LearningProfileExtractor:
             if cleaned and cleaned not in unique_mistakes:
                 unique_mistakes.append(cleaned)
         return unique_mistakes
-    
+
     def first_signal_value(self,topic_signals:list[ExtractedLearningSignal],field_name:str):
         for signal in topic_signals:
             value=getattr(signal,field_name)
             if value:
                 return value
         return None
-    
+
     def store_extracted_evidence(self,signal:TopicLearningSignal,topic_signals:list[ExtractedLearningSignal],request:ConversationAnalysisRequest):
         evidence_parts=[item.evidence or item.detail for item in topic_signals if item.evidence or item.detail]
         evidence_text="|".join(evidence_parts[:3]) if evidence_parts else "Extracted from recent conversation."
@@ -151,10 +151,10 @@ class LearningProfileExtractor:
         correctness_bonus=signal.correct_count/signal.attempts if signal.attempts else 0.0
         raw_score=50+signal.strength_score*25-signal.weakness_score*30+(signal.confidence_score-0.5)*20+correctness_bonus*15
         return int(round(clamp(raw_score,0,100)))
-    
+
     def build_mastery_score(self,profile:LearningProfile):
         return{signal.topic:self.topic_mastery_score(signal) for signal in profile.topics.values()}
-    
+
     def build_memory_updates(self,signal:TopicLearningSignal,profile:LearningProfile,mistakes:list[str],strength_detected:bool,weakness_detected:bool,style_signal:str|None):
         updates=[]
         if weakness_detected:
@@ -167,7 +167,7 @@ class LearningProfileExtractor:
             detail=f"Student appears to prefer {style_signal} explanations."
             updates.append(MemoryAdapterEntry(memory_type="learning_style",subject=signal.subject,topic=signal.topic,detail=detail,confidence=profile.confidence))
         return updates
-    
+
     def build_semantic_events(self,signal:TopicLearningSignal,profile:LearningProfile,strength_detected:bool,weakness_detected:bool):
         events=[]
         if weakness_detected:
@@ -177,3 +177,4 @@ class LearningProfileExtractor:
              text=f"Student is showing strength in {signal.topic}."
              events.append(SemanticMemoryEvent(text=text,topic=signal.topic,memory_type="strength",importance=0.6,confidence=signal.confidence_score,learning_style=profile.preferred_learning_style,student_id=profile.student_id))
         return events
+    

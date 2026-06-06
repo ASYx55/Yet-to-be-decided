@@ -17,7 +17,7 @@ class LearningProfileStore:
             profile=LearningProfile.model_validate(json.load(file))
         profile.student_id=LOCAL_STUDENT_ID
         return profile
-    
+
     def save(self,profile:LearningProfile):
         """Save profile to disk."""
         profile.student_id=LOCAL_STUDENT_ID
