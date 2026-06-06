@@ -5,6 +5,7 @@ from .model import ConversationAnalysisRequest, ConversationMessage, LOCAL_STUDE
 from .storage import LearningProfileStore
 
 class Layer3MessageProcessor:
+    """Processes new chat turns when the API receives them."""
     def __init__(self,profile_store:LearningProfileStore|None=None,
                 analyzer:OllamaSignalAnalyzer|None=None,
                 extractor:LearningProfileExtractor|None=None,
@@ -15,6 +16,7 @@ class Layer3MessageProcessor:
         self.max_recent_messages=max_recent_messages
 
     def process_chat_turn(self,subject:str,topic:str,student_message:str,assistant_reply:str):
+        """Processes one completed student+assistant turn."""
         messages=[ConversationMessage(role="student",
                                     content=student_message),
                                     ConversationMessage(role="assistant",content=assistant_reply)]

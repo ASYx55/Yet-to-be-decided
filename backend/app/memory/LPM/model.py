@@ -5,17 +5,21 @@ from pydantic import BaseModel,Field
 LOCAL_STUDENT_ID="local_student"
 
 def utc_now():
+    """Creates a shared helper for current UTC time"""
     return datetime.now(timezone.utc)
 
 def default_learning_style_scores():
+    """Creates default learning-style scores."""
     return {"step by step":0.5,"examples":0.5,"visual":0.5,"practice":0.5,"short answer":0.5}
 
 class ConversationMessage(BaseModel):
+    """Represents one raw chat message."""
     role:str
     content:str
     created_at:datetime=Field(default_factory=utc_now)
 
 class ConversationAnalysisRequest(BaseModel):
+    """Represents recent raw chat sent to the extractor model."""
     student_id:str=LOCAL_STUDENT_ID
     subject:str
     topic:str
@@ -27,6 +31,7 @@ class ConversationAnalysisRequest(BaseModel):
     max_recent_messages:int=8
 
 class ExtractedLearningSignal(BaseModel):
+    """Represents one signal extracted by Ollama."""
     signal_type:str
     subject:str
     topic:str
@@ -40,12 +45,14 @@ class ExtractedLearningSignal(BaseModel):
     is_correct:bool|None=None
 
 class EvidenceItem(BaseModel):
+    """Represents evidence behind a memory update."""
     source:str="scheduled_background"
     text:str
     weight:float=1.0
     created_at:datetime=Field(default_factory=utc_now)
 
 class TopicLearningSignal(BaseModel):
+    """Tracks one topic inside the profile."""
     subject:str
     topic:str
     weakness_score:float=0.0
@@ -60,6 +67,7 @@ class TopicLearningSignal(BaseModel):
     updated_at:datetime=Field(default_factory=utc_now)
 
 class LearningProfile(BaseModel):
+    """Stores the one local learner profile."""
     student_id:str=LOCAL_STUDENT_ID
     preferred_learning_style:str="step by step"
     learning_style_scores:dict[str,float]=Field(default_factory=default_learning_style_scores)
@@ -71,11 +79,13 @@ class LearningProfile(BaseModel):
     updated_at:datetime=Field(default_factory=utc_now)
 
 class StudentInfoUpdateDraft(BaseModel):
+    """Matches the existing profile-update shape."""
     learning_style:str|None=None
     strong_points:list[str]|None=None
     weak_points:list[str]|None=None
 
 class MemoryAdapterEntry(BaseModel):
+    """Matches the existing simple memory shape."""
     memory_id:str="layer3_pending"
     memory_type:str
     subject:str
@@ -84,6 +94,7 @@ class MemoryAdapterEntry(BaseModel):
     confidence:str="medium"
 
 class SemanticMemoryEvent(BaseModel):
+    """Represents a summarized event for semantic memory."""
     text:str
     topic:str
     memory_type:str
@@ -93,6 +104,7 @@ class SemanticMemoryEvent(BaseModel):
     student_id:str=LOCAL_STUDENT_ID
 
 class ProfileExtraction(BaseModel):
+    """Represents the complete Layer 3 output."""
     profile:LearningProfile
     student_info_update:StudentInfoUpdateDraft
     extracted_signals:list[ExtractedLearningSignal]=Field(default_factory=list)

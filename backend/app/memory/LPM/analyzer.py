@@ -5,9 +5,11 @@ from urllib.error import URLError,HTTPError
 from .model import ConversationAnalysisRequest,ExtractedLearningSignal
 
 def normalize(value:str):
+    """Normalizes text for fallback matching."""
     return value.lower().replace("’", "'").strip()
 
 def has_any(text:str,phrases:tuple[str,...]):
+    """Checks whether text contains any phrase."""
     normalized=normalize(text)
     for phrase in phrases:
         if phrase in normalized:
@@ -15,6 +17,7 @@ def has_any(text:str,phrases:tuple[str,...]):
     return False
 
 class OllamaSignalAnalyzer:
+    """Extracts learning signals using a free local Ollama model."""
     def __init__(self,model_name: str ="qwen3:4b",
                  ollama_url:str ="http://localhost:11434/api/generate",
                  timeout_seconds:int=60,
@@ -25,6 +28,7 @@ class OllamaSignalAnalyzer:
         self.use_fallback=use_fallback
 
     def analyze(self,request:ConversationAnalysisRequest):
+        """Extracts learning signals from raw recent chat."""
         prompt=self.build_prompt(request)
         response_text=self.call_ollama(prompt)
         signals=self.parse_model_response(response_text,request)if response_text else []
@@ -35,7 +39,12 @@ class OllamaSignalAnalyzer:
         return[]
 
     def call_ollama(self,prompt:str):
-        payload={"model":self.model_name,"prompt":prompt,"stream":False,"format":"json","options":{"temperature":0.1}}
+        """Calls Ollama's local HTTP API."""
+        payload={"model":self.model_name,
+                "prompt":prompt,
+                "stream":False,
+                "format":"json",
+                "options":{"temperature":0.1}}
         body=json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         http_request=url_request.Request(self.ollama_url,data=body,headers=headers,method="POST")
@@ -47,6 +56,7 @@ class OllamaSignalAnalyzer:
             return ""
 
     def build_prompt(self,request: ConversationAnalysisRequest):
+        """Builds the structured extraction prompt for the local model."""
         recent_messages=request.messages[-request.max_recent_messages:]
         transcript_lines=[]
         for message in recent_messages:
@@ -78,6 +88,7 @@ class OllamaSignalAnalyzer:
             Transcript:{transcript}"""
 
     def parse_model_response(self,response_text:str,request:ConversationAnalysisRequest):
+        """Parses model JSON into typed signals."""
         json_text=self.extract_json_object(response_text)
         if not json_text:
             return []
@@ -99,6 +110,7 @@ class OllamaSignalAnalyzer:
         return signals
 
     def extract_json_object(self,response_text:str):
+        """Extracts the first JSON object from model text."""
         text=response_text.strip()
         if text.startswith("```"):
             text=text.replace("```json","").replace("```","").strip()
@@ -109,11 +121,17 @@ class OllamaSignalAnalyzer:
         return text[start:end+1]
 
     def local_fallback(self,request:ConversationAnalysisRequest):
+        """Extracts obvious signals without a model for local tests."""
         recent_messages=request.messages[-request.max_recent_messages:]
         transcript = "\n".join(message.role + ": " + message.content for message in recent_messages)
         normalized=normalize(transcript)
         signals=[]
-        if request.is_correct is False or has_any(normalized,("incorrect","wrong","not correct","forgot","mistake","error")):
+        if request.is_correct is False or has_any(normalized,("incorrect",
+                                                        w"wrong",
+                                                        "not correct",
+                                                        "forgot",
+                                                        "mistake",
+                                                        "error")):
             mistakes=self.infer_mistakes(normalized)
             detail="Student made an error in" + request.topic
             signals.append(ExtractedLearningSignal(signal_type="weakness",
@@ -125,10 +143,11 @@ class OllamaSignalAnalyzer:
                             mistakes=mistakes,
                             is_correct=False))
         if request.is_correct is True or (has_any(normalized,
-                                            ("good work",
-                                            "well done",
-                                            "that is right"))
-                                            or ("correct" in normalized and "not correct" not in normalized and "incorrect" not in normalized)):
+                                        ("good work",
+                                        "well done",
+                                        "that is right"))
+                                        or ("correct" in normalized and "not correct" 
+                                        not in normalized and "incorrect" not in normalized)):
             detail = "Student showed correct understanding in " + request.topic
             signals.append(ExtractedLearningSignal(signal_type="strength",
                             subject=request.subject,
@@ -138,7 +157,12 @@ class OllamaSignalAnalyzer:
                             confidence_label="medium",
                             confidence_score=0.65,
                             is_correct=True))
-        if has_any(normalized, ("don't understand", "dont understand", "confused", "stuck", "lost", "not sure")):
+        if has_any(normalized, ("don't understand", 
+                                "dont understand", 
+                                "confused", 
+                                "stuck", 
+                                "lost", 
+                                "not sure")):
             detail = "Student showed low confidence or confusion in " + request.topic
             signals.append(ExtractedLearningSignal(signal_type="confidence",
                             subject=request.subject,
@@ -182,6 +206,7 @@ class OllamaSignalAnalyzer:
         return ["unspecified mistake"]
 
     def infer_learning_style(self,normalized:str):
+        """ Infers learning style from transcript language."""
         if has_any(normalized, ("step by step","break it down","slowly","from basics")):
             return "step by step"
         if has_any(normalized, ("diagram","graph","visual","draw")):
