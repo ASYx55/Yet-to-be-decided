@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from .background import ConversationBufferStore,Layer3BackgroundService
+from .background import Layer3MessageProcessor
 from .model import ConversationAnalysisRequest,ExtractedLearningSignal
 from .storage import LearningProfileStore
 
@@ -12,11 +12,8 @@ def run_demo():
     with TemporaryDirectory() as folder:
         root=Path(folder)
         profile_store=LearningProfileStore(root/"profile.json")
-        buffer_store=ConversationBufferStore(root/"buffer.json")
-        service=Layer3BackgroundService(profile_store=profile_store,buffer_store=buffer_store,analyzer=FakeAnalyzer())
-        service.log_chat_turn("math","differentiation","I think derivative of sin(x^2) is cos(x^2).","That is not correct because the chain rule is missing.")
-        service.log_chat_turn("math","differentiation","Can you break it down step by step?","Sure, first identify the inside function.")
-        result=service.process_pending_once()
+        service=Layer3MessageProcessor(profile_store=profile_store,analyzer=FakeAnalyzer())
+        result=service.process_chat_turn("math", "differentiation", "Can you break it down step by step? I think derivative of sin(x^2) is cos(x^2).", "That is not correct because the chain rule is missing.")
         assert result is not None
         assert "differentiation" in result.profile.weaknesses
         assert result.profile.preferred_learning_style=="step by step"
