@@ -15,13 +15,15 @@ class Layer3MessageProcessor:
         self.max_recent_messages=max_recent_messages
 
     def process_chat_turn(self,subject:str,topic:str,student_message:str,assistant_reply:str):
-        messages=[ConversationMessage(role="student",content=student_message),ConversationMessage(role="assistant",content=assistant_reply)]
+        messages=[ConversationMessage(role="student",
+                                    content=student_message),
+                                    ConversationMessage(role="assistant",content=assistant_reply)]
         request=ConversationAnalysisRequest(student_id=LOCAL_STUDENT_ID,
-                                            subject=subject,
-                                            topic=topic,
-                                            messages=messages[-self.max_recent_messages :],
-                                            event_type="chat_turn",
-                                            max_recent_messages=self.max_recent_messages)
+                                        subject=subject,
+                                        topic=topic,
+                                        messages=messages[-self.max_recent_messages :],
+                                        event_type="chat_turn",
+                                        max_recent_messages=self.max_recent_messages)
         signals=self.analyzer.analyze(request)
         if not signals:
             return None

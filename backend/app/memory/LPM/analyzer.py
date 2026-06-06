@@ -15,7 +15,10 @@ def has_any(text:str,phrases:tuple[str,...]):
     return False
 
 class OllamaSignalAnalyzer:
-    def __init__(self,model_name: str ="qwen3:4b",ollama_url:str ="http://localhost:11434/api/generate",timeout_seconds:int=60,use_fallback:bool=True):
+    def __init__(self,model_name: str ="qwen3:4b",
+                 ollama_url:str ="http://localhost:11434/api/generate",
+                 timeout_seconds:int=60,
+                 use_fallback:bool=True):
         self.model_name=model_name
         self.ollama_url=ollama_url
         self.timeout_seconds=timeout_seconds
@@ -114,65 +117,65 @@ class OllamaSignalAnalyzer:
             mistakes=self.infer_mistakes(normalized)
             detail="Student made an error in" + request.topic
             signals.append(ExtractedLearningSignal(signal_type="weakness",
-                                                   subject=request.subject,
-                                                   topic=request.topic,detail=detail,
-                                                   evidence=self.short_evidence(transcript),
-                                                   confidence_label="high",
-                                                   confidence_score=0.8,
-                                                   mistakes=mistakes,
-                                                   is_correct=False))
-        if request.is_correct is True or (has_any(normalized, 
-                                                  ("good work", 
-                                                   "well done", 
-                                                   "that is right")) 
-                                                   or ("correct" in normalized and "not correct" not in normalized and "incorrect" not in normalized)):
+                            subject=request.subject,
+                            topic=request.topic,detail=detail,
+                            evidence=self.short_evidence(transcript),
+                            confidence_label="high",
+                            confidence_score=0.8,
+                            mistakes=mistakes,
+                            is_correct=False))
+        if request.is_correct is True or (has_any(normalized,
+                                            ("good work",
+                                            "well done",
+                                            "that is right"))
+                                            or ("correct" in normalized and "not correct" not in normalized and "incorrect" not in normalized)):
             detail = "Student showed correct understanding in " + request.topic
-            signals.append(ExtractedLearningSignal(signal_type="strength", 
-                                                   subject=request.subject, 
-                                                   topic=request.topic, 
-                                                   detail=detail, 
-                                                   evidence=self.short_evidence(transcript), 
-                                                   confidence_label="medium", 
-                                                   confidence_score=0.65, 
-                                                   is_correct=True))
+            signals.append(ExtractedLearningSignal(signal_type="strength",
+                            subject=request.subject,
+                            topic=request.topic,
+                            detail=detail,
+                            evidence=self.short_evidence(transcript),
+                            confidence_label="medium",
+                            confidence_score=0.65,
+                            is_correct=True))
         if has_any(normalized, ("don't understand", "dont understand", "confused", "stuck", "lost", "not sure")):
             detail = "Student showed low confidence or confusion in " + request.topic
-            signals.append(ExtractedLearningSignal(signal_type="confidence", 
-                                                   subject=request.subject, 
-                                                   topic=request.topic, 
-                                                   detail=detail, 
-                                                   evidence=self.short_evidence(transcript), 
-                                                   confidence_label="low", 
-                                                   confidence_score=0.25))
+            signals.append(ExtractedLearningSignal(signal_type="confidence",
+                            subject=request.subject,
+                            topic=request.topic,
+                            detail=detail,
+                            evidence=self.short_evidence(transcript),
+                            confidence_label="low",
+                            confidence_score=0.25))
         style = self.infer_learning_style(normalized)
         if style is not None:
             detail = "Student appears to prefer " + style + " explanations"
-            signals.append(ExtractedLearningSignal(signal_type="learning_style", 
-                                                   subject=request.subject, 
-                                                   topic=request.topic, 
-                                                   detail=detail, 
-                                                   evidence=self.short_evidence(transcript), 
-                                                   confidence_label="medium", 
-                                                   confidence_score=0.6, 
-                                                   learning_style=style))
+            signals.append(ExtractedLearningSignal(signal_type="learning_style",
+                            subject=request.subject,
+                            topic=request.topic,
+                            detail=detail,
+                            evidence=self.short_evidence(transcript),
+                            confidence_label="medium",
+                            confidence_score=0.6,
+                            learning_style=style))
         if request.response_time_seconds is not None and request.response_time_seconds > 90:
             detail = "Student took a long time on " + request.topic
-            signals.append(ExtractedLearningSignal(signal_type="speed", 
-                                                   subject=request.subject, 
-                                                   topic=request.topic, 
-                                                   detail=detail, 
-                                                   evidence="response_time_seconds=" + str(request.response_time_seconds), 
-                                                   confidence_label="medium", 
-                                                   confidence_score=0.6, 
-                                                   speed="slow"))
+            signals.append(ExtractedLearningSignal(signal_type="speed",
+                            subject=request.subject,
+                            topic=request.topic,
+                            detail=detail,
+                            evidence="response_time_seconds=" + str(request.response_time_seconds),
+                            confidence_label="medium",
+                            confidence_score=0.6,
+                            speed="slow"))
         if not signals:
-            signals.append(ExtractedLearningSignal(signal_type="neutral", 
-                                                   subject=request.subject, 
-                                                   topic=request.topic, 
-                                                   detail="No strong learning signal found.", 
-                                                   evidence=self.short_evidence(transcript), 
-                                                   confidence_label="low", 
-                                                   confidence_score=0.2))
+            signals.append(ExtractedLearningSignal(signal_type="neutral",
+                            subject=request.subject,
+                            topic=request.topic,
+                            detail="No strong learning signal found.",
+                            evidence=self.short_evidence(transcript),
+                            confidence_label="low",
+                            confidence_score=0.2))
         return signals
 
     def infer_mistakes(self):
