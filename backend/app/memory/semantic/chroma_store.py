@@ -1,8 +1,17 @@
 """
-ChromaDB Vector Store Module.
+Persistent ChromaDB vector storage utilities.
 
-Provides functions for creating collections, inserting embeddings,
-and performing semantic similarity search using ChromaDB.
+This module provides the low-level persistence and retrieval layer
+for semantic memory storage. It manages ChromaDB collections,
+document insertion, vector similarity queries, and metadata-aware
+filtering operations used throughout the adaptive tutoring system.
+
+Features:
+    - persistent collection management
+    - semantic vector retrieval
+    - metadata filtering
+    - document and embedding storage
+    - disk-backed persistence
 
 Copyright (c) 2026 suy0x1
 """
@@ -11,121 +20,156 @@ import uuid
 import chromadb
 
 
-def create_collection(name="memory"):
+_client = chromadb.PersistentClient(
+    path="./database/chroma"
+)
+
+
+def get_client():
     """
-    Create a new ChromaDB collection.
+    Return the shared persistent ChromaDB client instance.
 
-    A collection is similar to a table in SQL databases.
-    It stores:
-        - documents
-        - embeddings
-        - ids
-        - optional metadata
-
-    Args:
-        name (str, optional):
-            Name of the collection.
-            Defaults to "memory".
+    The client is initialized once at module load time and reused
+    across the application to minimize initialization overhead and
+    maintain consistent access to the persistent vector store.
 
     Returns:
-        chromadb.Collection:
-            A ChromaDB collection object.
+        Shared persistent ChromaDB client instance.
+    """
 
-    Example:
-        >>> collection = create_collection("student_memory")
+    return _client
+
+
+def create_collection(name: str = "memory"):
+    """
+    Create or retrieve a persistent ChromaDB collection.
+
+    Collections store semantic documents, embeddings, metadata,
+    and unique identifiers used during retrieval operations.
+
+    Args:
+        name:
+            Name of the collection to create or retrieve.
+
+    Returns:
+        Persistent ChromaDB collection instance.
 
     Notes:
-        - Uses in-memory ChromaDB storage by default.
-        - Collection data disappears when program exits unless
-          persistent storage is configured.
+        - Existing collections are automatically reused.
+        - Collections are persisted on disk.
+        - Collection creation is idempotent.
     """
-    client = chromadb.Client()
-    return client.create_collection(name=name)
+
+    client = get_client()
+
+    return client.get_or_create_collection(
+        name=name
+    )
 
 
-def add_documents(collection, docs, embeddings):
+def add_documents(
+    collection,
+    docs: list[str],
+    embeddings: list[list[float]],
+) -> None:
     """
     Insert documents and embeddings into a ChromaDB collection.
 
-    Each document receives a randomly generated UUID to prevent
-    ID collisions during multiple insert operations.
+    Each document receives a generated UUID to ensure unique
+    identifiers within the vector store.
 
     Args:
         collection:
-            The ChromaDB collection object.
+            Target ChromaDB collection.
 
-        docs (list[str]):
-            List of text documents to store.
+        docs:
+            Documents to store.
 
-        embeddings (list[list[float]]):
-            Vector embeddings corresponding to each document.
-
-    Returns:
-        None
-
-    Example:
-        >>> docs = [
-        ...     "Student struggles with recursion",
-        ...     "Student likes visual explanations"
-        ... ]
-        >>> embeddings = embed_batch(docs)
-        >>> add_documents(collection, docs, embeddings)
+        embeddings:
+            Embedding vectors corresponding to each document.
 
     Notes:
-        - Number of embeddings must equal number of documents.
-        - Embeddings should already be generated beforehand.
-        - UUIDs ensure uniqueness across all insertions.
+        - Document and embedding counts must match.
+        - Duplicate semantic memories are not automatically
+          deduplicated.
+        - UUID generation is non-deterministic.
     """
-    ids = [str(uuid.uuid4()) for _ in docs]
+
+    ids = [
+        str(uuid.uuid4())
+        for _ in docs
+    ]
 
     collection.add(
         documents=docs,
         embeddings=embeddings,
-        ids=ids
+        ids=ids,
     )
 
 
-def query_collection(collection, query_embedding, k=3):
+def query_collection(
+    collection,
+    query_embedding: list[float],
+    k: int = 3,
+    topic: str | None = None,
+    memory_type: str | None = None,
+    min_importance: float | None = None,
+) -> dict:
     """
-    Perform semantic similarity search in ChromaDB.
+    Execute a semantic vector similarity query against a collection.
 
-    The query embedding is compared against all stored
-    embeddings using vector similarity distance.
+    Retrieval combines dense vector similarity search with optional
+    metadata constraints to support controllable semantic retrieval.
+
+    Supported filters include:
+        - topic filtering
+        - memory type filtering
+        - importance threshold filtering
 
     Args:
         collection:
-            ChromaDB collection object.
+            Target ChromaDB collection.
 
-        query_embedding (list[float]):
-            Embedding vector representing the query.
+        query_embedding:
+            Embedding vector representing the retrieval query.
 
-        k (int, optional):
-            Number of nearest results to retrieve.
-            Defaults to 3.
+        k:
+            Maximum number of nearest neighbors to retrieve.
+
+        topic:
+            Optional topic constraint.
+
+        memory_type:
+            Optional semantic memory category constraint.
+
+        min_importance:
+            Optional minimum importance threshold.
 
     Returns:
-        dict:
-            ChromaDB query response containing:
-                - ids
-                - documents
-                - distances
-                - metadata
-
-    Example:
-        >>> query_emb = embed_text(
-        ...     "I don't understand recursion"
-        ... )
-        >>> results = query_collection(
-        ...     collection,
-        ...     query_emb,
-        ...     k=3
-        ... )
+        Raw ChromaDB query response containing retrieved
+        documents, metadata, distances, and identifiers.
 
     Notes:
-        - Lower distance means higher semantic similarity.
-        - Retrieval is based purely on embedding proximity.
+        - Lower vector distance indicates higher semantic similarity.
+        - Metadata filtering is deterministic.
+        - Vector similarity retrieval is probabilistic.
     """
+
+    where = {}
+
+    if topic:
+        where["topic"] = topic.lower()
+
+    if memory_type:
+        where["memory_type"] = memory_type.lower()
+
+    if min_importance is not None:
+        where["importance"] = {
+            "$gte": float(min_importance)
+        }
+
     return collection.query(
         query_embeddings=[query_embedding],
-        n_results=k
+        n_results=k,
+        where=where if where else None,
     )
