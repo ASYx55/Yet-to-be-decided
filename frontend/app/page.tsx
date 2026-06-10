@@ -1,5 +1,5 @@
-import AppShell from "@/components/layout/app_shell";
+import { Hero } from "@/components/landing/hero";
 
 export default function Home() {
-  return <AppShell />;
+  return <Hero />;
 }
